@@ -68,7 +68,6 @@ function renderItem(todo: Todo, kind: "active" | "done") {
     });
     actions.appendChild(deleteBtn);
   } else {
-    // 컴파일 시 never 체크 (noFallthrough + 안전성)
     assertNever(kind);
   }
 
@@ -76,5 +75,4 @@ function renderItem(todo: Todo, kind: "active" | "done") {
   return li;
 }
 
-// 최초 렌더
 render();
