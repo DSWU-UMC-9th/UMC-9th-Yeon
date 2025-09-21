@@ -40,7 +40,7 @@ function renderList(container: HTMLUListElement, items: readonly Todo[], kind: "
 
 function renderItem(todo: Todo, kind: "active" | "done") {
   const li = document.createElement("li");
-  li.className = "todo-item";
+  li.classList.add("todo-item");
 
   const title = document.createElement("span");
   title.className = "todo-item__title";
