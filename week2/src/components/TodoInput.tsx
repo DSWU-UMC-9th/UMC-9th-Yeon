@@ -1,5 +1,6 @@
 import { type ChangeEvent, type FormEvent } from "react";
 import { useTodo } from "../context/TodoContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function TodoInput() {
   const { input, setInput, add } = useTodo();
@@ -9,6 +10,8 @@ export default function TodoInput() {
     e.preventDefault();
     add();
   };
+
+  const { dark } = useTheme();
 
   return (
     <form className="flex gap-2 mb-6" onSubmit={handleSubmit}>
@@ -22,7 +25,9 @@ export default function TodoInput() {
       />
       <button
         type="submit"
-        className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium transition-colors"
+        className={`px-4 py-2 rounded-lg ${
+          dark ? "bg-green-800" : "bg-green-600"
+        } text-white text-sm font-medium transition-colors`}
       >
         할 일 추가
       </button>
