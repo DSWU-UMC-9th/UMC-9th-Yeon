@@ -37,7 +37,7 @@ export default function App() {
         }`}
       >
         <main
-          className={` w-[500px] max-w-full mx-auto p-7 sm:p-8 ${
+          className={`w-[500px] max-w-full mx-auto p-7 sm:p-8 ${
             dark ? "bg-gray-500" : "bg-white"
           } rounded-2xl shadow-[0_6px_32px_rgba(0,0,0,0.11),0_1.5px_5px_rgba(0,0,0,0.04)] text-center`}
         >
@@ -45,7 +45,7 @@ export default function App() {
 
           <TodoInput />
 
-          <div className={`mt-6 flex justify-around gap-2.5`}>
+          <div className="mt-6 flex justify-around gap-2.5">
             <TodoSection title="할 일">
               <TodoList mode="todo" />
             </TodoSection>
