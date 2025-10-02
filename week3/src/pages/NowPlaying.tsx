@@ -5,7 +5,7 @@ import Spinner from "../components/Spinner";
 import Pager from "../components/Pager";
 import { useMovies } from "../hooks/useMovies";
 
-export default function Home() {
+export default function NowPlaying() {
   const [page, setPage] = useState(1);
   const { movies, isLoading, error } = useMovies(fetchNowPlayingMovies, page);
 

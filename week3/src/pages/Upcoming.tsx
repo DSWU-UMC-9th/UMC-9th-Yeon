@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { fetchNowPlayingMovies } from "../api/tmdb";
+import { fetchUpcomingMovies } from "../api/tmdb";
 import MovieCard from "../components/MovieCard";
 import Spinner from "../components/Spinner";
 import Pager from "../components/Pager";
 import { useMovies } from "../hooks/useMovies";
 
-export default function Home() {
+export default function Upcoming() {
   const [page, setPage] = useState(1);
-  const { movies, isLoading, error } = useMovies(fetchNowPlayingMovies, page);
+  const { movies, isLoading, error } = useMovies(fetchUpcomingMovies, page);
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">

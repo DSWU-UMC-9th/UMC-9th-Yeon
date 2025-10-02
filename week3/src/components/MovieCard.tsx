@@ -17,7 +17,6 @@ export default function MovieCard({ movie }: Props) {
         <div className="h-64 w-full grid place-items-center bg-gray-100 text-gray-400">이미지 없음</div>
       )}
 
-      {/* 오버레이 */}
       <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <div className="rounded-xl bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4">
           <h3 className="text-white font-semibold text-base leading-tight line-clamp-2">{movie.title || movie.name}</h3>

@@ -46,12 +46,27 @@ async function request(path: string, opts: FetchOptions = {}) {
   return json;
 }
 
-// 인기 영화
 export async function fetchPopularMovies(opts?: FetchOptions) {
   const json = await request("/movie/popular", opts);
   if (!json || !Array.isArray(json.results)) {
     throw new Error(json?.status_message || "예상치 못한 응답 형식");
   }
+  return json.results as Movie[];
+}
+
+export async function fetchUpcomingMovies(opts?: FetchOptions) {
+  const json = await request("/movie/upcoming", opts);
+  if (!json || !Array.isArray(json.results)) throw new Error(json?.status_message || "예상치 못한 응답 형식");
+  return json.results as Movie[];
+}
+export async function fetchTopRatedMovies(opts?: FetchOptions) {
+  const json = await request("/movie/top_rated", opts);
+  if (!json || !Array.isArray(json.results)) throw new Error(json?.status_message || "예상치 못한 응답 형식");
+  return json.results as Movie[];
+}
+export async function fetchNowPlayingMovies(opts?: FetchOptions) {
+  const json = await request("/movie/now_playing", opts);
+  if (!json || !Array.isArray(json.results)) throw new Error(json?.status_message || "예상치 못한 응답 형식");
   return json.results as Movie[];
 }
 
