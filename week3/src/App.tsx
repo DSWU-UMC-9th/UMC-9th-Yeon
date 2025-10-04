@@ -5,6 +5,7 @@ import Popular from "./pages/Popular";
 import Upcoming from "./pages/Upcoming";
 import TopRated from "./pages/TopRated";
 import NowPlaying from "./pages/NowPlaying";
+import MovieDetail from "./pages/MovieDetail";
 
 export default function App() {
   return (
@@ -16,6 +17,8 @@ export default function App() {
           <Route path="/upcoming" element={<Upcoming />} />
           <Route path="/top_rated" element={<TopRated />} />
           <Route path="/now_playing" element={<NowPlaying />} />
+
+          <Route path="/movie/:movieId" element={<MovieDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

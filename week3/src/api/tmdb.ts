@@ -72,3 +72,12 @@ export async function fetchNowPlayingMovies(opts?: FetchOptions) {
 
 // 이미지 베이스
 export const IMG_BASE = "https://image.tmdb.org/t/p/w500";
+
+// 이미 존재하는 request 유틸을 그대로 재사용한다고 가정합니다.
+export async function fetchMovieDetails(id: string, opts?: FetchOptions) {
+  return request(`/movie/${id}`, opts);
+}
+
+export async function fetchMovieCredits(id: string, opts?: FetchOptions) {
+  return request(`/movie/${id}/credits`, opts);
+}

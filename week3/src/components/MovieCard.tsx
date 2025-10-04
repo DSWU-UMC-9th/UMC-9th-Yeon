@@ -1,11 +1,17 @@
 import { IMG_BASE } from "../api/tmdb";
 import type { Movie } from "../types/movie";
+import { useNavigate } from "react-router-dom";
 
 type Props = { movie: Movie };
 
 export default function MovieCard({ movie }: Props) {
+  const navigate = useNavigate();
+
   return (
-    <article className="group relative overflow-hidden rounded-2xl shadow-lg border border-black/5 bg-white">
+    <article
+      onClick={() => navigate(`/movie/${movie.id}`)}
+      className="group relative overflow-hidden rounded-2xl shadow-lg border border-black/5 bg-white cursor-pointer"
+    >
       {movie.poster_path ? (
         <img
           src={`${IMG_BASE}${movie.poster_path}`}

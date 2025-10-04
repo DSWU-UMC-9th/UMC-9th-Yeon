@@ -1,8 +1,16 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 
 export default function Navbar() {
+  const { pathname } = useLocation();
+  const isMovieDetail = pathname.startsWith("/movie/");
   const linkCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "font-semibold text-green-700" : "text-gray-500 hover:text-gray-900";
+    isActive
+      ? isMovieDetail
+        ? "font-semibold text-white"
+        : "font-semibold text-green-700"
+      : isMovieDetail
+      ? "text-gray-500 hover:text-white"
+      : "text-gray-500 hover:text-gray-900";
 
   return (
     <nav className="flex gap-4 text-sm">
