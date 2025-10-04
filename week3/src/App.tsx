@@ -9,7 +9,24 @@ import MovieDetail from "./pages/MovieDetail";
 
 export default function App() {
   return (
-    <BrowserRouter>
+const router = createBrowserRouter([
+  {
+    path: "/",  
+    element: <Layout />,  
+    children: [
+      { path: "/", element: <Home /> },
+      { path: "popular", element: <Popular /> },
+      { path: "upcoming", element: <Upcoming /> },
+      { path: "top_rated", element: <TopRated /> },
+      { path: "now_playing", element: <NowPlaying /> },
+      { path: "movie/:movieId", element: <MovieDetail /> },
+    ],
+  },
+]);
+
+export default function App() {
+  return <RouterProvider router={router} />;
+}
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
