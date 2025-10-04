@@ -38,6 +38,5 @@ export default function App() {
           <Route path="/movie/:movieId" element={<MovieDetail />} />
         </Route>
       </Routes>
-    </BrowserRouter>
   );
 }
