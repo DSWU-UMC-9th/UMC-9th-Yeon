@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import api from "../api/client";
 import Button from "../components/forms/Button";
 import TextInput from "../components/forms/TextInput";
 import { useForm } from "../hooks/useForm";
@@ -18,8 +20,24 @@ const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
+  const { login, logout, isAuthed, token } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
+
+  useEffect(() => {
+    console.log("✅ 로그인 상태 변경:", isAuthed, "token:", token);
+  }, [isAuthed, token]);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/signout", {}).catch(() => {});
+    } finally {
+      logout();
+      navigate("/login", { replace: true });
+    }
+  };
+
+  // 서버 리다이렉트용 OAuth 시작 주소 (api 인스턴스 baseURL 사용)
+  const API_BASE = (api.defaults.baseURL as string) || "http://localhost:8000/v1";
 
   const { values, errors, touched, isValid, submitting, handleChange, handleBlur, handleSubmit } = useForm<LoginValues>(
     {
@@ -37,15 +55,14 @@ export default function Login() {
       onSubmit: async ({ email, password }) => {
         try {
           setServerError(null);
-          const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/v1";
-          const { data } = await axios.post(`${baseURL}/auth/signin`, { email, password }, { withCredentials: true });
+          const { data } = await api.post("/auth/signin", { email, password });
 
           const accessToken: string | undefined = data?.accessToken;
           if (!accessToken) throw new Error("토큰이 응답에 없습니다.");
 
           login(accessToken);
 
-          const redirectTo = (location.state as any)?.from ?? "/";
+          const redirectTo = (location.state as any)?.from?.pathname ?? "/";
           navigate(redirectTo, { replace: true });
         } catch (e: any) {
           const msg = e?.response?.data?.message || e?.message || "로그인에 실패했습니다.";
@@ -55,6 +72,27 @@ export default function Login() {
     }
   );
 
+  // ✅ 여기 로직을 바로잡습니다: 로그인되어 있으면 폼을 숨기고 안내/로그아웃만 보여줍니다.
+  if (isAuthed) {
+    return (
+      <div className="min-h-screen bg-black text-white grid place-items-center px-4">
+        <div className="w-full max-w-md text-center">
+          <p className="mb-6 text-lg">이미 로그인된 상태입니다 </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button onClick={() => navigate("/", { replace: true })}>홈으로 가기</Button>
+            <Button
+              onClick={handleLogout}
+              className="border border-gray-700 bg-transparent text-gray-200 hover:bg-gray-800"
+            >
+              로그아웃
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 미로그인 상태 → 로그인 폼 렌더
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="mx-auto flex max-w-md flex-col gap-6 px-4 py-16">
@@ -73,7 +111,10 @@ export default function Login() {
 
         {/* 구글 로그인 */}
         <Button
-          onClick={() => console.log("google login")}
+          onClick={() => {
+            // 구글 OAuth 시작: 서버로 리다이렉트
+            window.location.assign(`${API_BASE}/auth/google/login`);
+          }}
           className="border border-gray-700 bg-transparent text-gray-200 hover:bg-gray-800 flex items-center justify-center"
         >
           <img src={googleLogo} alt="Google" className="mr-2 h-5 w-5" />
@@ -132,8 +173,7 @@ export function LogoutButton({ className = "" }: { className?: string }) {
 
   const handleLogout = async () => {
     try {
-      const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/v1";
-      await axios.post(`${baseURL}/auth/logout`, {}, { withCredentials: true }).catch(() => {});
+      await api.post("/auth/signout", {}).catch(() => {});
     } finally {
       logout();
       navigate("/login", { replace: true });

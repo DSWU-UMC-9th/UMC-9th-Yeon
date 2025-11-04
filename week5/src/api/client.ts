@@ -1,4 +1,5 @@
-import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import axios from "axios";
+import type { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { tokenStore } from "../hooks/useTokenStore";
 
 const api: AxiosInstance = axios.create({

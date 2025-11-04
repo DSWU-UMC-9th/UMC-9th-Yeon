@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { useNavigate } from "react-router-dom";
 import Button from "../components/forms/Button";
 import TextInput from "../components/forms/TextInput";
@@ -96,7 +98,9 @@ export default function Signup() {
         {step === 1 && (
           <>
             <Button
-              onClick={() => console.log("google signup")}
+              onClick={() => {
+                window.location.assign(`${API_BASE}/auth/google/login`);
+              }}
               className="border border-gray-700 bg-transparent text-gray-200 hover:bg-gray-800 flex items-center justify-center"
             >
               <img src={googleLogo} alt="Google" className="mr-2 h-5 w-5" />

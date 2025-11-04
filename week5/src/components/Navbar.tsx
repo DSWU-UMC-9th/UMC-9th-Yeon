@@ -1,9 +1,14 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Navbar() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isMovieDetail = pathname.startsWith("/movie/");
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/signup");
+
+  const { isAuthed, logout } = useAuth();
+
   const linkCls = ({ isActive }: { isActive: boolean }) =>
     isActive
       ? isMovieDetail
@@ -15,15 +20,29 @@ export default function Navbar() {
 
   if (isAuthPage) {
     return (
-      <nav className="w-full flex items-center justify-between">
+      <nav className="w-full flex items-center justify-between text-white">
         <div className="text-pink-500 text-2xl font-bold">돌려돌려LP판</div>
         <div className="flex gap-2">
-          <NavLink to="/login" className="bg-black text-white px-2 py-1 rounded">
-            로그인
-          </NavLink>
-          <NavLink to="/signup" className="bg-pink-500 text-white px-2 py-1 rounded">
-            회원가입
-          </NavLink>
+          {isAuthed ? (
+            <button
+              onClick={() => {
+                logout();
+                navigate("/login", { replace: true });
+              }}
+              className="bg-black text-white px-2 py-1 rounded"
+            >
+              로그아웃
+            </button>
+          ) : (
+            <>
+              <NavLink to="/login" className="bg-black text-white px-2 py-1 rounded">
+                로그인
+              </NavLink>
+              <NavLink to="/signup" className="bg-pink-500 text-white px-2 py-1 rounded">
+                회원가입
+              </NavLink>
+            </>
+          )}
         </div>
       </nav>
     );
