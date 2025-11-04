@@ -1,10 +1,9 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Button from "../components/forms/Button";
 import TextInput from "../components/forms/TextInput";
 import { useForm } from "../hooks/useForm";
 import googleLogo from "../media/google.svg";
 import backLogo from "../media/back.svg";
-import { useAuth } from "../hooks/useAuth";
 
 type LoginValues = {
   email: string;
@@ -15,8 +14,6 @@ const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 export default function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login } = useAuth();
 
   const { values, errors, touched, isValid, submitting, handleChange, handleBlur, handleSubmit } = useForm<LoginValues>(
     {
@@ -32,12 +29,11 @@ export default function Login() {
         return errs;
       },
       onSubmit: async ({ email, password }) => {
-        // const token = await api.auth.login({ email, password });
-        const token = "dummy-token";
-        login(token);
-
-        const redirectTo = (location.state as any)?.from ?? "/";
-        navigate(redirectTo, { replace: true });
+        // TODO: 실제 로그인 API 연동 위치
+        // await api.auth.login({ email, password });
+        console.log("login with", email, password);
+        // 성공 시 이동
+        // navigate("/");
       },
     }
   );
