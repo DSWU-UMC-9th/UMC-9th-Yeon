@@ -199,9 +199,7 @@ export default function Signup() {
               aria-invalid={!!nicknameError}
             />
             {serverError && (
-              <p className="mt-1 text-sm text-red-400" role="alert">
-                {serverError}
-              </p>
+              <p className="mt-1 text-sm text-red-400" role="alert">{serverError}</p>
             )}
             <Button disabled={!canComplete} onClick={handleComplete} className="mt-2">
               회원가입 완료

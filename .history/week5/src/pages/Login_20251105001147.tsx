@@ -38,7 +38,7 @@ export default function Login() {
         try {
           setServerError(null);
           const baseURL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/v1";
-          const { data } = await axios.post(`${baseURL}/auth/signin`, { email, password }, { withCredentials: true });
+          const { data } = await axios.post(`${baseURL}/auth/login`, { email, password }, { withCredentials: true });
 
           const accessToken: string | undefined = data?.accessToken;
           if (!accessToken) throw new Error("토큰이 응답에 없습니다.");
