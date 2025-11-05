@@ -9,7 +9,7 @@ export default function LpCreate() {
           placeholder="설명"
           className="outline-none resize-none px-3 py-2 h-32 rounded bg-neutral-800 border border-neutral-600"
         />
-        <button className="px-3 py-2 rounded bg-sky-600">생성</button>
+        <button className="px-3 py-2 rounded bg-pink-600">생성</button>
       </form>
     </div>
   );

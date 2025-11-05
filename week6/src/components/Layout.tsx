@@ -44,7 +44,7 @@ export default function Layout() {
       <Header onOpenSidebar={() => setOpen(true)} />
       <div className="flex">
         {/* 데스크탑 사이드바 */}
-        <aside className="hidden md:block w-56 shrink-0 border-r border-neutral-800">
+        <aside className="z-90 hidden md:block w-56 shrink-0 border-r border-neutral-800">
           <Sidebar />
         </aside>
 

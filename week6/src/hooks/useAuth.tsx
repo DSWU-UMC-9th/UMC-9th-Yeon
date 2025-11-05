@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState, useEffect } from "react";
 
 export type AuthContextType = {
   token: string | null;
@@ -11,12 +11,32 @@ export type AuthContextType = {
   logout: () => void;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+const STORAGE_KEY = "umc_auth_session";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // 요구사항상 localStorage는 사용하지 않고 메모리에만 보관합니다.
-  const [token, setToken] = useState<string | null>(null);
-  const [profile, setProfile] = useState<any>(null);
+  // 새로고침/브라우저 재시작 후에도 유지하기 위해 localStorage 사용
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.token ?? null;
+    } catch {
+      return null;
+    }
+  });
+  const [profile, setProfile] = useState<any>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed?.profile ?? null;
+    } catch {
+      return null;
+    }
+  });
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -35,6 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [token, profile]
   );
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, profile }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [token, profile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
