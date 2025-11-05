@@ -6,8 +6,8 @@ import api from "../api/client";
 import Button from "../components/forms/Button";
 import TextInput from "../components/forms/TextInput";
 import { useForm } from "../hooks/useForm";
-import googleLogo from "../media/google.svg";
-import backLogo from "../media/back.svg";
+import googleLogo from "../assets/google.svg";
+import backLogo from "../assets/back.svg";
 import { useAuth } from "../hooks/useAuth";
 
 type LoginValues = {
@@ -57,10 +57,24 @@ export default function Login() {
           setServerError(null);
           const { data } = await api.post("/auth/signin", { email, password });
 
-          const accessToken: string | undefined = data?.accessToken;
+          const accessToken: string | undefined = data?.accessToken ?? data?.token;
           if (!accessToken) throw new Error("토큰이 응답에 없습니다.");
 
-          login(accessToken);
+          // 서버 응답에서 사용자 정보를 최대한 유연하게 추출합니다.
+          const rawUser = data?.user ?? data?.profile ?? data;
+          const profile = {
+            id: rawUser?.id ?? rawUser?.userId ?? rawUser?.sub ?? null,
+            name:
+              rawUser?.name ??
+              rawUser?.nickname ??
+              rawUser?.username ??
+              (rawUser?.email ? String(rawUser.email).split("@")[0] : undefined),
+            nickname: rawUser?.nickname ?? rawUser?.name ?? undefined,
+            email: rawUser?.email ?? undefined,
+            role: rawUser?.role ?? rawUser?.roles ?? undefined,
+          };
+
+          login(accessToken, profile);
 
           const redirectTo = (location.state as any)?.from?.pathname ?? "/";
           navigate(redirectTo, { replace: true });

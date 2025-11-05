@@ -4,10 +4,10 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/forms/Button";
 import TextInput from "../components/forms/TextInput";
 import { useState } from "react";
-import googleLogo from "../media/google.svg";
-import backLogo from "../media/back.svg";
-import showLogo from "../media/show.svg";
-import hideLogo from "../media/hide.svg";
+import googleLogo from "../assets/google.svg";
+import backLogo from "../assets/back.svg";
+import showLogo from "../assets/show.svg";
+import hideLogo from "../assets/hide.svg";
 import axios from "axios";
 
 const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;

@@ -1,17 +1,15 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Layout from "./components/Layout";
-import Home from "./pages/Home";
-import Popular from "./pages/Popular";
-import Upcoming from "./pages/Upcoming";
-import TopRated from "./pages/TopRated";
-import NowPlaying from "./pages/NowPlaying";
-import MovieDetail from "./pages/MovieDetail";
 import OAuthCallback from "./pages/OAuthCallback";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 
 import ProtectedRoute from "./components/routing/ProtectedRoute";
+import LpList from "./pages/LpList";
+import LpDetail from "./pages/LpDetail";
+import LpCreate from "./pages/LpCreate";
+import MyPage from "./pages/MyPage";
 
 function NotFound() {
   return <div className="p-8 text-center">존재하지 않는 페이지입니다.</div>;
@@ -27,48 +25,31 @@ const router = createBrowserRouter([
         index: true,
         element: (
           <ProtectedRoute>
-            {" "}
-            <Home />
+            <LpList />
           </ProtectedRoute>
         ),
       },
       {
-        path: "popular",
+        path: "lp/:lpid",
         element: (
           <ProtectedRoute>
-            <Popular />{" "}
+            <LpDetail />
           </ProtectedRoute>
         ),
       },
       {
-        path: "upcoming",
+        path: "lp/new",
         element: (
           <ProtectedRoute>
-            <Upcoming />{" "}
+            <LpCreate />
           </ProtectedRoute>
         ),
       },
       {
-        path: "top_rated",
+        path: "my",
         element: (
           <ProtectedRoute>
-            <TopRated />{" "}
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "now_playing",
-        element: (
-          <ProtectedRoute>
-            <NowPlaying />{" "}
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "movie/:movieId",
-        element: (
-          <ProtectedRoute>
-            <MovieDetail />{" "}
+            <MyPage />
           </ProtectedRoute>
         ),
       },

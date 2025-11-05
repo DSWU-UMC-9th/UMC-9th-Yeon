@@ -5,7 +5,9 @@ import React, { createContext, useContext, useMemo, useState } from "react";
 export type AuthContextType = {
   token: string | null;
   isAuthed: boolean;
-  login: (token: string) => void;
+  profile: any;
+  setProfile: (p: any) => void;
+  login: (token: string, profile: any) => void;
   logout: () => void;
 };
 
@@ -14,15 +16,24 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 요구사항상 localStorage는 사용하지 않고 메모리에만 보관합니다.
   const [token, setToken] = useState<string | null>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   const value = useMemo<AuthContextType>(
     () => ({
       token,
       isAuthed: !!token,
-      login: (t) => setToken(t),
-      logout: () => setToken(null),
+      profile,
+      setProfile,
+      login: (t, p) => {
+        setToken(t);
+        setProfile(p);
+      },
+      logout: () => {
+        setToken(null);
+        setProfile(null);
+      },
     }),
-    [token]
+    [token, profile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1079,10 +1079,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.90.6":
-  version: 5.90.6
-  resolution: "@tanstack/query-core@npm:5.90.6"
-  checksum: 10c0/2523cd4d9bc4d9fc1a828b15923c44046004fb1c4322f8c211ff4c153914bc776a356a476f499127cfee3fc89b101ac64f93b352aa761bd349c3a8e0de33d792
+"@tanstack/query-core@npm:5.90.7":
+  version: 5.90.7
+  resolution: "@tanstack/query-core@npm:5.90.7"
+  checksum: 10c0/82198b1ed8c6c1cfd87ec904e241af4839b82597a67744fb972008739cc89ded359509b8599ba7079040111c4a2a573884301d9a2fa39fc48337d2945300525c
   languageName: node
   linkType: hard
 
@@ -1105,14 +1105,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.90.6":
-  version: 5.90.6
-  resolution: "@tanstack/react-query@npm:5.90.6"
+"@tanstack/react-query@npm:^5.90.7":
+  version: 5.90.7
+  resolution: "@tanstack/react-query@npm:5.90.7"
   dependencies:
-    "@tanstack/query-core": "npm:5.90.6"
+    "@tanstack/query-core": "npm:5.90.7"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/0cde819c41d3f02dccc443786c3aeb6e0a6135365ef127dd8e5bb25d65837b0b12b011c6700c14df1f866a1d65d57a6f4a00abf2ddac31543d68b4963ca80d1a
+  checksum: 10c0/a4508f115f2b604962e534f7218c1a07707414456ffe900c50ab2dbbd2e46e7f2336d1c8793929722fb262a67cf8d118448e71b6bac4da6b2155d69c628d8855
   languageName: node
   linkType: hard
 
@@ -1122,6 +1122,15 @@ __metadata:
   dependencies:
     tslib: "npm:^2.4.0"
   checksum: 10c0/b255094f293794c6d2289300c5fbcafbb5532a3aed3a5ffd2f8dc1828e639b88d75f6a376dd8f94347a44813fd7a7149d8463477a9a49525c8b2dcaa38c2d1e8
+  languageName: node
+  linkType: hard
+
+"@types/axios@npm:^0.14.4":
+  version: 0.14.4
+  resolution: "@types/axios@npm:0.14.4"
+  dependencies:
+    axios: "npm:*"
+  checksum: 10c0/945ef9d9d493b7292d33cf55679af90ffb60fe85475ce79327494480d517e8263f3f0c2f262396a1ada3ef4d66f3b05ea16b1f3c40680aa2b8399c36f6a92dfa
   languageName: node
   linkType: hard
 
@@ -1189,16 +1198,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^19.1.9":
-  version: 19.2.1
-  resolution: "@types/react-dom@npm:19.2.1"
+"@types/react-dom@npm:^19.2.2":
+  version: 19.2.2
+  resolution: "@types/react-dom@npm:19.2.2"
   peerDependencies:
     "@types/react": ^19.2.0
-  checksum: 10c0/0dbbc5b7ecd74681bfac95a413133b26118a70b8840748277abafa47e5c7a037beae6a660e6a21fb53f5cbdb0b2d33e117ea7bbd976a888c298392a8a96bc68f
+  checksum: 10c0/6154dfb8e7a638313d7fa15b2b16494f2235afda4c43be37d10f34e5c7a730f6b95117facb5e6eebc73b15cceea7f6da23be46cda5d2262fd00fd7e6069547e3
   languageName: node
   linkType: hard
 
-"@types/react@npm:^19.1.16":
+"@types/react@npm:^19.2.2":
   version: 19.2.2
   resolution: "@types/react@npm:19.2.2"
   dependencies:
@@ -1462,14 +1471,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.13.1":
-  version: 1.13.1
-  resolution: "axios@npm:1.13.1"
+"axios@npm:*, axios@npm:^1.13.2":
+  version: 1.13.2
+  resolution: "axios@npm:1.13.2"
   dependencies:
     follow-redirects: "npm:^1.15.6"
     form-data: "npm:^4.0.4"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10c0/de9c3c6de43d3ee1146d3afe78645f19450cac6a5d7235bef8b8e8eeb705c2e47e2d231dea99cecaec4dae1897c521118ca9413b9d474063c719c4d94c5b9adc
+  checksum: 10c0/e8a42e37e5568ae9c7a28c348db0e8cf3e43d06fcbef73f0048669edfe4f71219664da7b6cc991b0c0f01c28a48f037c515263cb79be1f1ae8ff034cd813867b
   languageName: node
   linkType: hard
 
@@ -2848,6 +2857,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lucide-react@npm:^0.552.0":
+  version: 0.552.0
+  resolution: "lucide-react@npm:0.552.0"
+  peerDependencies:
+    react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/60ab9ab6f422360344fb5364f7305f2a2f2a81a72fd4e59ed2376a903ea89d9d152288044638e8b144f2fbaa9c1325ba9a18724632d23265470a55419a01d55d
+  languageName: node
+  linkType: hard
+
 "magic-string@npm:^0.30.19":
   version: 0.30.19
   resolution: "magic-string@npm:0.30.19"
@@ -3322,7 +3340,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^19.1.1":
+"react-dom@npm:^19.2.0":
   version: 19.2.0
   resolution: "react-dom@npm:19.2.0"
   dependencies:
@@ -3340,21 +3358,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:^7.9.4":
-  version: 7.9.4
-  resolution: "react-router-dom@npm:7.9.4"
+"react-router-dom@npm:^7.9.5":
+  version: 7.9.5
+  resolution: "react-router-dom@npm:7.9.5"
   dependencies:
-    react-router: "npm:7.9.4"
+    react-router: "npm:7.9.5"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/03979ef887411230188d8eb7e001379c164f28235d5e3589f9192f73edae4c6e59a155aec0bcdcb84b3fa4e72caff0c38f4709ffb2e4cdca4cb8a8ab1c60dd35
+  checksum: 10c0/e54fdfa211e356bd89e3c12b1f89537058357ef21b6a05f55456e0defaab8e77b7495e035ff6999b17a9a2e6f8204d46cf5897fe56e5d3db9458109a014efc4d
   languageName: node
   linkType: hard
 
-"react-router@npm:7.9.4":
-  version: 7.9.4
-  resolution: "react-router@npm:7.9.4"
+"react-router@npm:7.9.5":
+  version: 7.9.5
+  resolution: "react-router@npm:7.9.5"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -3364,7 +3382,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/c7556b752fa88d2bff600ce3533c962dcbe9ca9bf71f9c4b8e8a21f904856990bcb284844d53eb1dd486adaa7567c7ecf0deb3e518262269ea1ea89bea246be4
+  checksum: 10c0/e961816b4096a6ca97fc53626fc6532014c0de4c45bf6c234b8205eb4f94be8f357d67819e4f4f58507f79ef9bda4c3f70031a8dd13c7045e3ad0ecb12f819e3
   languageName: node
   linkType: hard
 
@@ -3878,21 +3896,23 @@ __metadata:
     "@eslint/js": "npm:^9.36.0"
     "@prisma/client": "npm:^6.18.0"
     "@tailwindcss/vite": "npm:^4.1.14"
-    "@tanstack/react-query": "npm:^5.90.6"
+    "@tanstack/react-query": "npm:^5.90.7"
     "@tanstack/react-query-devtools": "npm:^5.90.2"
+    "@types/axios": "npm:^0.14.4"
     "@types/node": "npm:^24.6.0"
-    "@types/react": "npm:^19.1.16"
-    "@types/react-dom": "npm:^19.1.9"
+    "@types/react": "npm:^19.2.2"
+    "@types/react-dom": "npm:^19.2.2"
     "@vitejs/plugin-react": "npm:^5.0.4"
-    axios: "npm:^1.13.1"
+    axios: "npm:^1.13.2"
     eslint: "npm:^9.36.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.22"
     globals: "npm:^16.4.0"
+    lucide-react: "npm:^0.552.0"
     prisma: "npm:^6.18.0"
     react: "npm:^19.2.0"
-    react-dom: "npm:^19.1.1"
-    react-router-dom: "npm:^7.9.4"
+    react-dom: "npm:^19.2.0"
+    react-router-dom: "npm:^7.9.5"
     tailwindcss: "npm:^4.1.14"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.45.0"
