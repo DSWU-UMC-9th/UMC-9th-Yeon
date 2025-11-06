@@ -7,6 +7,9 @@ import TopRated from "./pages/TopRated";
 import NowPlaying from "./pages/NowPlaying";
 import MovieDetail from "./pages/MovieDetail";
 
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -18,6 +21,9 @@ const router = createBrowserRouter([
       { path: "top_rated", element: <TopRated /> },
       { path: "now_playing", element: <NowPlaying /> },
       { path: "movie/:movieId", element: <MovieDetail /> },
+
+      { path: "login", element: <Login /> },
+      { path: "signup", element: <Signup /> },
     ],
   },
 ]);
