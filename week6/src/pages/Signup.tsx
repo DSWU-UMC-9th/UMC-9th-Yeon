@@ -85,7 +85,7 @@ export default function Signup() {
         <div className="flex items-center">
           <button
             onClick={goPrev}
-            className="mb-2 w-fit rounded-md px-2 py-1 text-sm text-gray-300 hover:bg-gray-800"
+            className="mb-2 w-fit rounded-md px-2 py-1 text-sm text-gray-300"
             aria-label="이전 페이지로 이동"
           >
             <img src={backLogo} alt="back" className="mr-2 h-5 w-5" />
@@ -134,7 +134,7 @@ export default function Signup() {
         {step === 2 && (
           <>
             <div className="flex items-center text-sm text-gray-300">
-              <span className="mr-2">✉</span>
+              <span className="mr-2">email - </span>
               {email}
             </div>
 
@@ -155,7 +155,7 @@ export default function Signup() {
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-200"
                 aria-label="비밀번호 보기/숨기기"
               >
-                {showPw ? <img src={hideLogo} /> : <img src={showLogo} />}
+                {showPw ? <img src={showLogo} /> : <img src={hideLogo} />}
               </button>
             </div>
 
@@ -176,7 +176,7 @@ export default function Signup() {
                 className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-200"
                 aria-label="비밀번호 확인 보기/숨기기"
               >
-                {showConfirm ? <img src={hideLogo} /> : <img src={showLogo} />}
+                {showConfirm ? <img src={showLogo} /> : <img src={hideLogo} />}
               </button>
             </div>
 

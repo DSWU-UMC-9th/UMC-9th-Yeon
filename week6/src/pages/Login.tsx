@@ -94,10 +94,7 @@ export default function Login() {
           <p className="mb-6 text-lg">이미 로그인된 상태입니다 </p>
           <div className="flex items-center justify-center gap-3">
             <Button onClick={() => navigate("/", { replace: true })}>홈으로 가기</Button>
-            <Button
-              onClick={handleLogout}
-              className="border border-gray-700 bg-transparent text-gray-200 hover:bg-gray-800"
-            >
+            <Button onClick={handleLogout} className="border border-gray-700 bg-transparent text-gray-200">
               로그아웃
             </Button>
           </div>
@@ -114,7 +111,7 @@ export default function Login() {
         <div className="flex items-center">
           <button
             onClick={() => navigate(-1)}
-            className="mb-2 w-fit rounded-md px-2 py-1 text-sm text-gray-300 hover:bg-gray-800"
+            className="mb-2 w-fit rounded-md px-2 py-1 text-sm text-gray-30"
             aria-label="이전 페이지로 이동"
           >
             <img src={backLogo} alt="back" className="mr-2 h-5 w-5" />
