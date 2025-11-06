@@ -2,3 +2,4 @@ ignore.md
 UMC-8th-WEB-Server/
 **/UMC-8th-WEB-Server/
 .history/
+node_modules/
