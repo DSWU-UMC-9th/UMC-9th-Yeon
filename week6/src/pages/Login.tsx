@@ -57,23 +57,29 @@ export default function Login() {
           setServerError(null);
           const { data } = await api.post("/auth/signin", { email, password });
 
-          const accessToken: string | undefined = data?.accessToken ?? data?.token;
+          // 서버 응답 형태 정규화 (Swagger 기준: { status, statusCode, message, data: { id, name, accessToken, refreshToken } })
+          const payload = data?.data ?? data;
+
+          const accessToken: string | undefined = payload?.accessToken ?? payload?.token;
+          const refreshToken: string | undefined = payload?.refreshToken;
           if (!accessToken) throw new Error("토큰이 응답에 없습니다.");
 
-          // 서버 응답에서 사용자 정보를 최대한 유연하게 추출합니다.
-          const rawUser = data?.user ?? data?.profile ?? data;
+          // 사용자 정보 (응답에 따라 유연 처리)
           const profile = {
-            id: rawUser?.id ?? rawUser?.userId ?? rawUser?.sub ?? null,
+            id: payload?.id ?? payload?.userId ?? payload?.sub ?? null,
             name:
-              rawUser?.name ??
-              rawUser?.nickname ??
-              rawUser?.username ??
-              (rawUser?.email ? String(rawUser.email).split("@")[0] : undefined),
-            nickname: rawUser?.nickname ?? rawUser?.name ?? undefined,
-            email: rawUser?.email ?? undefined,
-            role: rawUser?.role ?? rawUser?.roles ?? undefined,
-          };
+              payload?.name ?? payload?.nickname ?? (payload?.email ? String(payload.email).split("@")[0] : undefined),
+            nickname: payload?.nickname ?? payload?.name ?? undefined,
+            email: payload?.email ?? undefined,
+            role: payload?.role ?? payload?.roles ?? undefined,
+          } as const;
 
+          // refreshToken이 있다면 보관 (useAuth가 지원한다면 전달)
+          try {
+            if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+          } catch {}
+
+          // 액세스토큰과 프로필을 로그인 컨텍스트에 전달
           login(accessToken, profile);
 
           const redirectTo = (location.state as any)?.from?.pathname ?? "/";

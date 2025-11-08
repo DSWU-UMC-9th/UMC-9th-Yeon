@@ -58,22 +58,27 @@ export default function Signup() {
     try {
       setServerError(null);
       // 서버 Swagger 기준: POST /v1/auth/signup
-      // body: { name, email, password, profileImageUrl?, role }
-      await axios.post(
+      // body: { name, email, password, bio, avatar }
+      const res = await axios.post(
         `${API_BASE}/auth/signup`,
         {
           name: nickname,
           email,
           password,
-          profileImageUrl: null,
-          role: "USER",
+          bio: null, // 필요 시 문자열로 교체
+          avatar: null, // 필요 시 아바타 URL 문자열로 교체
         },
         { withCredentials: true }
       );
+
+      // (선택) 응답 구조 확인
+      console.log("[SIGNUP] response:", res.data);
+
       // 가입 성공 → 로그인 페이지로 이동
       navigate("/login");
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || "회원가입 중 오류가 발생했습니다.";
+      const msg =
+        e?.response?.data?.message || e?.response?.data?.error || e?.message || "회원가입 중 오류가 발생했습니다.";
       setServerError(Array.isArray(msg) ? msg.join("\n") : String(msg));
     }
   };

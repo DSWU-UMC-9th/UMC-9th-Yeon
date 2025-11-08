@@ -52,8 +52,10 @@ async function fetchLp(id: string, token?: string | null) {
   const { data } = await api.get(`/lps/${id}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
-  // Allow either { lp: LpDetail } or LpDetail
-  return (data?.lp ?? data) as LpDetail;
+  // Normalize common API envelopes: {data:{...}}, {lp:{...}}, or raw object
+  const payload: any = data?.data ?? data;
+  const lp: any = payload?.lp ?? payload?.data ?? payload;
+  return lp as LpDetail;
 }
 
 async function fetchComments(lpId: string, token?: string | null): Promise<LpComment[]> {
@@ -75,49 +77,44 @@ async function createComment(lpId: string, content: string, token?: string | nul
 // Lightweight count fetcher for comments
 async function fetchCommentsCount(lpId: string, token?: string | null): Promise<number> {
   const { data } = await api.get(`/lps/${lpId}/comments`, {
-    // try not to load all data if server supports totals
-    params: { page: 0, size: 1 },
+    params: { cursor: 0, limit: 1, order: "asc" },
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
-  if (typeof data?.total === "number") return data.total as number;
-  if (typeof data?.totalElements === "number") return data.totalElements as number;
-  if (typeof data?.count === "number") return data.count as number;
-  const arr = Array.isArray(data) ? data : data?.items ?? data?.content ?? [];
-  return Array.isArray(arr) ? arr.length : 0;
+  const payload: any = data?.data ?? data;
+  // Prefer explicit totals if the backend provides them
+  if (typeof payload?.total === "number") return payload.total as number;
+  if (typeof payload?.totalElements === "number") return payload.totalElements as number;
+  if (typeof payload?.count === "number") return payload.count as number;
+
+  // Fallback: infer from the items array when no total is provided
+  const arr = Array.isArray(payload) ? payload : ((payload?.data ?? payload?.items ?? payload?.content ?? []) as any[]);
+  const hasNext = Boolean(payload?.hasNext ?? payload?.hasMore);
+  // If there are more pages, signal unknown total with NaN; caller will render `loaded+` style
+  return hasNext ? Number.NaN : Array.isArray(arr) ? arr.length : 0;
 }
 
 async function fetchCommentsPage(
   lpId: string,
-  page: number,
-  size: number,
-  order: "new" | "old",
+  cursor: number,
+  limit: number,
+  order: "asc" | "desc",
   token?: string | null
 ) {
-  // Try server-side pagination first
-  const params: Record<string, any> = { page, size, order };
+  const params: Record<string, any> = { cursor, limit, order };
   const { data } = await api.get(`/lps/${lpId}/comments`, {
     params,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 
-  // Normalize various shapes
-  const items: LpComment[] = Array.isArray(data)
-    ? (data as LpComment[]).slice(page * size, page * size + size) // client-side slice fallback
-    : ((data?.items ?? data?.content ?? []) as LpComment[]);
+  // swagger-style payload: { status, statusCode, message, data: { data: [], nextCursor, hasNext, total? } }
+  const payload: any = data?.data ?? data;
+  const items: LpComment[] = (payload?.data ?? payload?.items ?? payload?.content ?? []) as LpComment[];
 
-  // hasMore detection
-  let total = (data?.total ?? data?.totalElements ?? data?.count) as number | undefined;
-  let hasMore: boolean;
-  if (typeof total === "number") {
-    hasMore = (page + 1) * size < total;
-  } else if (Array.isArray(data)) {
-    hasMore = (page + 1) * size < (data as LpComment[]).length;
-  } else {
-    // If API returns a flag
-    hasMore = Boolean(data?.hasNext ?? data?.hasMore ?? items.length === size);
-  }
+  const total = (payload?.total ?? payload?.totalElements ?? payload?.count) as number | undefined;
+  const hasMore: boolean = Boolean(payload?.hasNext ?? (Array.isArray(items) && items.length === limit));
+  const nextCursor: number | undefined = payload?.nextCursor ?? (hasMore ? cursor + limit : undefined);
 
-  return { items, nextPage: page + 1, hasMore };
+  return { items, nextCursor, hasMore, total };
 }
 
 function formatRelative(iso: string) {
@@ -178,11 +175,14 @@ export default function LpDetail() {
     refetch: refetchComments,
   } = useInfiniteQuery({
     queryKey: ["lpComments", lpid, order, token],
-    queryFn: ({ pageParam = 0 }) => fetchCommentsPage(lpid!, pageParam, PAGE_SIZE, order, token),
+    queryFn: ({ pageParam = 0 }) =>
+      fetchCommentsPage(lpid!, pageParam as number, PAGE_SIZE, order === "new" ? "desc" : "asc", token),
     initialPageParam: 0,
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextPage : undefined),
-    enabled: Boolean(token && lpid && commentsOpen),
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.nextCursor : undefined),
+    enabled: Boolean(token && lpid),
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
     retry: (failureCount, err) => {
       const status = (err as AxiosError)?.response?.status ?? 0;
       return status !== 401 && failureCount < 2;
@@ -266,8 +266,14 @@ export default function LpDetail() {
     );
   }
 
-  const imageUrl = (data as any)?.thumbnailUrl ?? (data as any)?.imageUrl ?? (data as any)?.coverUrl ?? null;
-  const contentText = data?.body ?? data?.description ?? "";
+  const imageUrl =
+    (data as any)?.thumbnail ??
+    (data as any)?.thumbnailUrl ??
+    (data as any)?.imageUrl ??
+    (data as any)?.coverUrl ??
+    null;
+
+  const contentText = (data as any)?.content ?? data?.body ?? data?.description ?? "";
   const likeCount =
     typeof data?.totalLikes === "number" ? data.totalLikes : Array.isArray(data?.likes) ? data!.likes!.length : 0;
 
@@ -278,10 +284,19 @@ export default function LpDetail() {
 
   const _pages = commentsPages?.pages ?? [];
   const commentList: LpComment[] = _pages.flatMap((p: any) => p.items as LpComment[]);
-  const commentCount = typeof totalCount === "number" ? totalCount : commentList.length;
+  const preloadedFirst = commentsPages?.pages?.[0];
+  const firstPageTotal = preloadedFirst?.total as number | undefined;
+  const firstHasMore = Boolean(preloadedFirst?.hasMore ?? preloadedFirst?.hasNext);
+  const preloadedLen = Array.isArray(preloadedFirst?.items) ? preloadedFirst!.items.length : 0;
+  const totalKnown = typeof totalCount === "number" && Number.isFinite(totalCount as number);
+  const commentCountText = totalKnown
+    ? String(totalCount)
+    : preloadedFirst
+    ? `${preloadedLen}${firstHasMore ? "+" : ""}`
+    : "0";
 
   return (
-    <article className="relative max-w-3xl mx-auto rounded-2xl border border-neutral-800 bg-neutral-900/50 shadow-xl">
+    <article className="relative  max-w-3xl mx-auto rounded-2xl border border-neutral-800 bg-neutral-900/50 shadow-xl">
       {/* Card header */}
       <header className="flex items-center justify-between px-6 pt-5">
         <div className="relative">
@@ -315,13 +330,13 @@ export default function LpDetail() {
       {/* Media */}
       <div className="px-6 mt-4">
         <div className="mx-auto max-w-md">
-          {imageUrl ? (
-            <img src={imageUrl} alt={data.title} className="w-full rounded-xl shadow-lg" />
-          ) : (
-            <div className="aspect-square rounded-xl bg-neutral-800 grid place-items-center text-neutral-500">
-              이미지 없음
-            </div>
-          )}
+          <div className="relative aspect-square overflow-hidden rounded-xl shadow-lg bg-neutral-800">
+            {imageUrl ? (
+              <img src={imageUrl} alt={data.title} className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <div className="absolute inset-0 grid place-items-center text-neutral-500">이미지 없음</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -352,7 +367,7 @@ export default function LpDetail() {
           className="flex items-center gap-2 text-neutral-200 hover:opacity-90"
           onClick={() => {
             if (!commentsOpen) {
-              // drop previous pages to force fresh load + skeleton
+              // remove only the list cache so opening shows skeleton, count query remains
               qc.removeQueries({ queryKey: ["lpComments", lpid], exact: false });
             }
             setCommentsOpen((v) => !v);
@@ -364,7 +379,7 @@ export default function LpDetail() {
           <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden>
             <path d="M20 2H4a2 2 0 0 0-2 2v14l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
           </svg>
-          <span className="font-medium">{commentCount}</span>
+          <span className="font-medium">{commentCountText}</span>
         </button>
       </footer>
 
