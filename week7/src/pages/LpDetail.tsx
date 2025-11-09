@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import api from "../api/client";
@@ -9,189 +9,16 @@ import editIcon from "../assets/edit.svg";
 import trashIcon from "../assets/trash.svg";
 import likeIcon from "../assets/like.svg";
 import moreIcon from "../assets/more.svg";
+import unlikeIcon from "../assets/unlike.svg";
 
+import type { LpDetail, LpComment } from "../types/lp";
 /**
  * Types
  */
-type LpDetail = {
-  id: number;
-  title: string;
-  description?: string;
-  body?: string;
-  thumbnailUrl?: string | null;
-  imageUrl?: string | null;
-  coverUrl?: string | null;
-  likes?: any[];
-  totalLikes?: number;
-  isLiked?: boolean;
-  isBookmarked?: boolean;
-  author?: {
-    id: number;
-    email: string;
-    name: string;
-    profileImageUrl?: string | null;
-    role?: string;
-  };
-  category?: { id: number; name: string };
-  /** tags can be strings or objects with name */
-  tags?: Array<string | { id?: number; name: string }>;
-  createdAt: string;
-  updatedAt?: string;
-};
-
-type LpComment = {
-  id: number;
-  content: string;
-  createdAt: string;
-  updatedAt?: string;
-  author?: {
-    id?: number;
-    email?: string;
-    name?: string;
-    profileImageUrl?: string | null;
-    role?: string;
-  };
-};
-
-/**
- * API helpers
- */
-async function fetchLp(id: string, token?: string | null) {
-  const { data } = await api.get(`/lps/${id}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  const payload: any = data?.data ?? data;
-  const lp: any = payload?.lp ?? payload?.data ?? payload;
-  return lp as LpDetail;
-}
-
-async function fetchCommentsCount(lpId: string, token?: string | null): Promise<number> {
-  const { data } = await api.get(`/lps/${lpId}/comments`, {
-    params: { cursor: 0, limit: 1, order: "asc" },
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  const payload: any = data?.data ?? data;
-  if (typeof payload?.total === "number") return payload.total as number;
-  if (typeof payload?.totalElements === "number") return payload.totalElements as number;
-  if (typeof payload?.count === "number") return payload.count as number;
-  const arr = Array.isArray(payload) ? payload : ((payload?.data ?? payload?.items ?? payload?.content ?? []) as any[]);
-  const hasNext = Boolean(payload?.hasNext ?? payload?.hasMore);
-  return hasNext ? Number.NaN : Array.isArray(arr) ? arr.length : 0;
-}
-
-async function fetchCommentsPage(
-  lpId: string,
-  cursor: number,
-  limit: number,
-  order: "asc" | "desc",
-  token?: string | null
-) {
-  const params: Record<string, any> = { cursor, limit, order };
-  const { data } = await api.get(`/lps/${lpId}/comments`, {
-    params,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  const payload: any = data?.data ?? data;
-  const items: LpComment[] = (payload?.data ?? payload?.items ?? payload?.content ?? []) as LpComment[];
-  const total = (payload?.total ?? payload?.totalElements ?? payload?.count) as number | undefined;
-  const hasMore: boolean = Boolean(payload?.hasNext ?? (Array.isArray(items) && items.length === limit));
-  const nextCursor: number | undefined = payload?.nextCursor ?? (hasMore ? cursor + limit : undefined);
-  return { items, nextCursor, hasMore, total };
-}
-
-async function createComment(lpId: string, content: string, token?: string | null) {
-  const { data } = await api.post(
-    `/lps/${lpId}/comments`,
-    { content },
-    { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
-  );
-  return data;
-}
-
-// PATCH comment (preferred route) with fallback to /comments/:id if backend differs
-async function updateComment(lpId: string, commentId: number, content: string, token?: string | null) {
-  try {
-    const { data } = await api.patch(
-      `/lps/${lpId}/comments/${commentId}`,
-      { content },
-      { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
-    );
-    return data;
-  } catch (e) {
-    const { data } = await api.patch(
-      `/comments/${commentId}`,
-      { content },
-      { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
-    );
-    return data;
-  }
-}
-
-// DELETE comment with same fallback strategy
-async function removeComment(lpId: string, commentId: number, token?: string | null) {
-  try {
-    const { data } = await api.delete(`/lps/${lpId}/comments/${commentId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    return data;
-  } catch (e) {
-    const { data } = await api.delete(`/comments/${commentId}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    return data;
-  }
-}
-
-// Update / Delete LP (author only)
-async function updateLp(
-  lpId: string,
-  body: { title?: string; content?: string; thumbnail?: string; published?: boolean; tags?: string[] },
-  token?: string | null
-) {
-  const { data } = await api.patch(`/lps/${lpId}`, body, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  return data;
-}
-
-async function deleteLp(lpId: string, token?: string | null) {
-  const { data } = await api.delete(`/lps/${lpId}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  return data;
-}
-
-// Like/unlike LP
-async function likeLp(lpId: string, token?: string | null) {
-  const { data } = await api.post(`/lps/${lpId}/likes`, null, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  return data;
-}
-
-async function unlikeLp(lpId: string, token?: string | null) {
-  const { data } = await api.delete(`/lps/${lpId}/likes`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  return data;
-}
-
-// Image upload helper
-async function uploadImage(file: File, token?: string | null) {
-  const form = new FormData();
-  form.append("file", file);
-  const { data } = await api.post(`/uploads`, form, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  // Swagger shows the server returns { status, message, statusCode, data: { imageUrl: "..." } }
-  // so prefer data.imageUrl, with safe fallbacks for other common shapes.
-  const payload: any = data?.data ?? data;
-  const url = payload?.imageUrl ?? payload?.url ?? payload?.location ?? payload?.fileUrl ?? payload?.path ?? "";
-  return url as string;
-}
+// ⬇️ 기존 API helper 함수들 전부 삭제하고, 아래 import 추가
+import { fetchLp, updateLp, deleteLp, likeLp, unlikeLp } from "../api/lps";
+import { fetchCommentsCount, fetchCommentsPage, createComment, updateComment, removeComment } from "../api/comments";
+import { uploadImage } from "../api/uploads";
 
 // Normalize tag names from either ["a","b"] or [{name:"a"},...] shapes
 function extractTagNames(src: any): string[] {
@@ -226,25 +53,78 @@ function initials(name?: string) {
   return (first + last).toUpperCase();
 }
 
+// Extract author identity defensively from various backend shapes
+function getAuthorIdentity(lp: any): { id: number | null; email: string | null } {
+  if (!lp) return { id: null, email: null };
+  // direct id fields that some backends use
+  const idCandidates = [
+    lp?.author?.id,
+    lp?.authorId,
+    lp?.user?.id,
+    lp?.userId,
+    lp?.ownerId,
+    lp?.createdById,
+    typeof lp?.author?.userId !== "undefined" ? lp?.author?.userId : undefined,
+  ];
+  let id: number | null = null;
+  for (const cand of idCandidates) {
+    const n = Number(cand);
+    if (Number.isFinite(n) && n > 0) {
+      id = n;
+      break;
+    }
+  }
+
+  const emailCandidates = [lp?.author?.email, lp?.user?.email, lp?.ownerEmail, lp?.createdByEmail];
+  let email: string | null = null;
+  for (const e of emailCandidates) {
+    if (typeof e === "string" && e.includes("@")) {
+      email = e;
+      break;
+    }
+  }
+  return { id, email };
+}
+
 export default function LpDetail() {
   const params = useParams();
   const lpid = (params as any)?.lpid ?? (params as any)?.lpId ?? (params as any)?.LPId;
   const { token, user } = useAuth() as { token?: string | null; user?: { id?: number; email?: string } };
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // derive my identity (id/email) from hook or JWT payload as fallback
-  const myIdentity = React.useMemo(() => {
+  // derive my identity (id/email) from hook, /users/me, or JWT payload as fallbacks (sticky to avoid flicker)
+  const { data: me } = useQuery({
+    queryKey: ["me", token],
+    queryFn: async () => {
+      const res = await api.get("/users/me", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const payload: any = res.data?.data ?? res.data;
+      return payload;
+    },
+    enabled: Boolean(token),
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const rawIdentity = React.useMemo(() => {
+    // 1) from useAuth()
     let myId: number | null = typeof user?.id === "number" ? Number(user!.id) : null;
     let myEmail: string | null = (user as any)?.email ?? null;
 
+    // 2) from /users/me
+    if (!myId && me?.id) myId = Number(me.id);
+    if (!myEmail && typeof me?.email === "string") myEmail = me.email as string;
+
+    // 3) decode token (last resort)
     if ((!myId || !myEmail) && token) {
       try {
         const payloadStr = atob(token.split(".")[1] || "");
         const payload = JSON.parse(payloadStr);
-        // common fields seen in tokens
         const candId = payload?.userId ?? payload?.id ?? (typeof payload?.sub === "string" ? payload.sub : undefined);
         const parsedId = Number(candId);
         if (!myId && Number.isFinite(parsedId)) myId = parsedId;
-
         if (!myEmail) {
           myEmail =
             payload?.email ??
@@ -256,7 +136,14 @@ export default function LpDetail() {
       }
     }
     return { myId, myEmail };
-  }, [token, user]);
+  }, [token, user, me]);
+
+  // keep the last known non-null identity to prevent owner UI from flickering false
+  const lastIdentityRef = React.useRef<{ myId: number | null; myEmail: string | null }>({ myId: null, myEmail: null });
+  if (rawIdentity.myId || rawIdentity.myEmail) {
+    lastIdentityRef.current = rawIdentity;
+  }
+  const myIdentity = lastIdentityRef.current;
 
   const qc = useQueryClient();
   const [commentsOpen, setCommentsOpen] = React.useState(false);
@@ -279,6 +166,10 @@ export default function LpDetail() {
   // Image upload state/refs for LP editing
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
+  // 서버 응답보다 클라이언트를 우선하도록 만드는 상태
+  const [likedOverride, setLikedOverride] = React.useState<boolean | null>(null);
+  // prevent accidental double fire on fast clicks (or bubbling)
+  const likeLockRef = React.useRef(false);
 
   const onPickFile = () => {
     fileInputRef.current?.click();
@@ -315,6 +206,16 @@ export default function LpDetail() {
     refetchOnWindowFocus: false,
   });
 
+  // Derive liked with client-side override to prevent flicker
+  const serverLiked = Boolean((data as any)?.isLiked);
+  const liked = likedOverride !== null ? likedOverride : serverLiked;
+
+  // When server value catches up to the override, clear the override
+  React.useEffect(() => {
+    if (likedOverride === null) return;
+    if (serverLiked === likedOverride) setLikedOverride(null);
+  }, [serverLiked, likedOverride]);
+
   const PAGE_SIZE = 3;
   const {
     data: commentsPages,
@@ -348,14 +249,33 @@ export default function LpDetail() {
     refetchOnWindowFocus: false,
   });
 
-  // owner check (by id or email) – kept for reference
-  const isOwner =
-    (myIdentity.myId && data?.author?.id && Number(myIdentity.myId) === Number(data.author.id)) ||
-    (!!myIdentity.myEmail && !!data?.author?.email && myIdentity.myEmail === data.author.email) ||
-    false;
+  // owner check (by id or email) — robust to various backend shapes, prefer backend flags if present
+  const authorIdentity = React.useMemo(() => getAuthorIdentity(data), [data]);
+  const dataIsOwner = Boolean(
+    (data as any)?.isOwner ?? (data as any)?.owner ?? (data as any)?.canEdit ?? (data as any)?.editable
+  );
+  const prevOwnerRef = React.useRef<boolean>(false);
+  const isOwner = React.useMemo(() => {
+    const byBackend = Boolean(
+      (data as any)?.isOwner ?? (data as any)?.owner ?? (data as any)?.canEdit ?? (data as any)?.editable
+    );
+    const byId = Number.isFinite(Number(myIdentity.myId)) && Number(myIdentity.myId) === Number(authorIdentity.id);
+    const byEmail = !!myIdentity.myEmail && !!authorIdentity.email && myIdentity.myEmail === authorIdentity.email;
+    const resolved = Boolean(byBackend || byId || byEmail || prevOwnerRef.current);
+    prevOwnerRef.current = resolved;
+    return resolved;
+  }, [data, myIdentity, authorIdentity]);
 
-  // Allow managing *anyone's* LP (UI level). Set to false to restore owner-only behavior.
-  const canManageLp = true || isOwner;
+  const canManageLp = isOwner;
+
+  if (import.meta?.env?.MODE !== "production") {
+    console.log("[LP OWNER CHECK]", {
+      dataIsOwner,
+      myIdentity,
+      authorIdentity,
+      resolvedIsOwner: isOwner,
+    });
+  }
 
   // LP update
   const { mutate: mutateLpUpdate, isPending: isLpUpdating } = useMutation({
@@ -373,7 +293,19 @@ export default function LpDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lp", lpid] });
       qc.invalidateQueries({ queryKey: ["lps"] });
-      window.location.href = "/";
+      // 우선적으로 이전 라우트 정보(state.from)를 사용하고,
+      // 없으면 브라우저 히스토리로 한 단계 뒤로 이동,
+      // 그것도 불가하면 기본 경로로 보냅니다.
+      const from: string | undefined = (location.state as any)?.from;
+      if (from?.startsWith("/my")) {
+        navigate("/my", { replace: true });
+      } else if (from === "/") {
+        navigate("/", { replace: true });
+      } else if (window.history.length > 1) {
+        navigate(-1);
+      } else {
+        navigate("/", { replace: true });
+      }
     },
     onError: (err: AxiosError | any) => {
       const status = err?.response?.status;
@@ -385,53 +317,92 @@ export default function LpDetail() {
     },
   });
 
-  // Toggle like – ALWAYS try POST first. If server says already-liked (409/400/422), then DELETE to cancel.
+  // Toggle like with optimistic UI using React Query cache
   const { mutate: toggleLike, isPending: isTogglingLike } = useMutation({
     mutationFn: async () => {
-      try {
-        // 1) 좋아요 먼저 시도
-        return await likeLp(lpid!, token);
-      } catch (err: any) {
-        const status = err?.response?.status;
-        // 2) 이미 좋아요 상태라면(중복/제약) → 취소 시도
-        if (status === 409 || status === 400 || status === 422) {
-          try {
-            return await unlikeLp(lpid!, token);
-          } catch (e2: any) {
-            // 취소 대상이 없으면(404) 그냥 노옵
-            if (e2?.response?.status === 404) return {};
-            throw e2;
-          }
+      if (!token) throw new Error("AUTH_MISSING");
+
+      // 캐시에서 현재 상태를 읽어 실제 요청을 결정
+      const cur = qc.getQueryData<any>(["lp", lpid]);
+      const currentlyLiked = Boolean(cur?.isLiked);
+
+      if (currentlyLiked) {
+        try {
+          return await unlikeLp(lpid!, token);
+        } catch (e: any) {
+          const st = e?.response?.status;
+          if (st === 404) return { status: true } as any; // 이미 해제되어 있었음 → 성공 처리
+          throw e;
         }
-        // 그 외는 그대로 에러 전파
-        throw err;
+      } else {
+        try {
+          return await likeLp(lpid!, token);
+        } catch (e: any) {
+          const st = e?.response?.status;
+          if (st === 409) return { status: true } as any; // 이미 좋아요였음 → 성공 처리
+          throw e;
+        }
       }
     },
+    // --- REPLACED onMutate ---
     onMutate: async () => {
-      const key = ["lp", lpid];
+      if (!token) {
+        return { previous: qc.getQueryData(["lp", lpid]) } as any;
+      }
+      const key = ["lp", lpid] as const;
       await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData(key);
-      qc.setQueryData(key, (old: any) => {
-        if (!old) return old;
-        const next: any = { ...old };
-        const wasLiked = Boolean(old.isLiked);
-        const willBeLiked = !wasLiked;
-        next.isLiked = willBeLiked;
-        if (typeof old.totalLikes === "number") {
-          next.totalLikes = Math.max(0, (old.totalLikes || 0) + (willBeLiked ? 1 : -1));
-        } else if (Array.isArray(old.likes)) {
-          const newLen = Math.max(0, old.likes.length + (willBeLiked ? 1 : -1));
-          next.likes = new Array(newLen).fill(0);
-        }
-        return next;
-      });
-      return { previous };
+      const previous = qc.getQueryData<any>(key);
+
+      // 현재 캐시 기준으로 낙관적 토글
+      const prevLiked = Boolean(previous?.isLiked);
+      const baseCount =
+        typeof previous?.totalLikes === "number"
+          ? previous.totalLikes
+          : Array.isArray(previous?.likes)
+          ? previous.likes.length
+          : 0;
+
+      const nextLiked = !prevLiked;
+      const nextTotal = Math.max(0, baseCount + (nextLiked ? 1 : -1));
+
+      setLikedOverride(nextLiked);
+      qc.setQueryData<any>(key, (p) => (p ? { ...p, isLiked: nextLiked, totalLikes: nextTotal } : p));
+      // nextLiked/nextTotal을 컨텍스트로 넘겨 성공시 동일 값으로 고정
+      return { previous, nextLiked, nextTotal } as any;
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["lp", lpid], ctx.previous);
+    // --- REPLACED onError ---
+    onError: (err: any, _vars, ctx: any) => {
+      if (ctx?.previous) {
+        qc.setQueryData(["lp", lpid], ctx.previous);
+      }
+      setLikedOverride(null);
+      const status = err?.response?.status;
+      if (status === 401) {
+        console.warn("[LIKE] 401 Unauthorized — 세션 유지, UI 롤백");
+        alert("권한이 없거나 세션이 만료되었습니다. 다시 로그인 후 시도해주세요.");
+      }
     },
+    // --- ADDED/MODIFIED onSuccess ---
+    onSuccess: (_res, _vars, ctx: any) => {
+      const key = ["lp", lpid] as const;
+      if (ctx && typeof ctx.nextLiked === "boolean") {
+        // 서버 응답 유무/형태와 무관하게 캐시를 확정값으로 고정
+        qc.setQueryData<any>(key, (p) => (p ? { ...p, isLiked: ctx.nextLiked, totalLikes: ctx.nextTotal } : p));
+      }
+      // override 해제하여 깜빡임 방지 (캐시 이미 확정값)
+      setLikedOverride(null);
+    },
+    // --- REPLACED onSettled ---
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: ["lp", lpid] });
+      // 즉시 무효화하지 않고, 비활성 쿼리에 한해 가볍게 동기화 (UI 깜빡임 방지)
+      setTimeout(() => {
+        try {
+          qc.invalidateQueries({ queryKey: ["lp", lpid], refetchType: "inactive" as any });
+        } catch {
+          // 일부 버전 호환: refetchType 미지원 시 일반 invalidation (지연 시점이므로 flicker 없음)
+          qc.invalidateQueries({ queryKey: ["lp", lpid] });
+        }
+      }, 1200);
     },
   });
 
@@ -550,6 +521,12 @@ export default function LpDetail() {
     : preloadedFirst
     ? `${preloadedLen}${firstHasMore ? "+" : ""}`
     : "0";
+
+  // Compute displayed like count with override applied to prevent visual jump
+  const displayedLikeCount =
+    likedOverride === null
+      ? Math.max(0, likeCount ?? 0)
+      : Math.max(0, (likeCount ?? 0) + (likedOverride === serverLiked ? 0 : likedOverride ? 1 : -1));
 
   return (
     <article className="relative  max-w-3xl mx-auto rounded-2xl border border-neutral-800 bg-neutral-900/50 shadow-xl">
@@ -787,16 +764,30 @@ export default function LpDetail() {
       <footer className="px-6 py-5 flex items-center justify-center gap-6">
         <button
           type="button"
-          className={`flex items-center gap-2 rounded px-2 py-1 ${
-            data?.isLiked ? "text-pink-400" : "text-neutral-200"
-          } ${isTogglingLike ? "opacity-60" : "hover:opacity-90"}`}
-          aria-pressed={Boolean(data?.isLiked)}
-          aria-label={data?.isLiked ? "좋아요 취소" : "좋아요"}
-          onClick={() => toggleLike()}
+          className={`flex items-center gap-2 rounded px-2 py-1 ${liked ? "text-pink-400" : "text-neutral-200"} ${
+            isTogglingLike ? "opacity-60" : "hover:opacity-90"
+          }`}
+          aria-pressed={liked}
+          aria-label={liked ? "좋아요 취소" : "좋아요"}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!token) {
+              alert("로그인이 필요합니다. 세션이 만료되었을 수 있어요.");
+              return;
+            }
+            if (likeLockRef.current || isTogglingLike) return; // 중복 방지
+            likeLockRef.current = true;
+            toggleLike(undefined, {
+              onSettled: () => {
+                likeLockRef.current = false;
+              },
+            });
+          }}
           disabled={isTogglingLike}
         >
-          <img src={likeIcon} alt="좋아요" className="h-5 w-5" />
-          <span className="font-medium">{likeCount}</span>
+          <img src={liked ? likeIcon : unlikeIcon} alt={liked ? "좋아요 취소" : "좋아요"} className="h-5 w-5" />
+          <span className="font-medium">{displayedLikeCount}</span>
         </button>
         <button
           className="flex items-center gap-2 text-neutral-200 hover:opacity-90"

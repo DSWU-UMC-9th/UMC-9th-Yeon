@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import PlusIcon from "../../assets/plus.svg";
 import LpDisc from "../../assets/lp.png";
 import api from "../../api/client";
+import { createLp as createLpApi } from "../../api/lps";
 
 // If your project is missing React type declarations (e.g. @types/react),
 // TypeScript can complain that 'JSX.IntrinsicElements' does not exist.
@@ -26,6 +27,8 @@ export default function Fab() {
   const [content, setContent] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const qc = useQueryClient();
 
@@ -70,7 +73,7 @@ export default function Fab() {
     setTags([]);
   };
 
-  const createLp = useMutation({
+  const createLpMut = useMutation({
     mutationFn: async () => {
       // 1) 선택된 파일이 있으면 먼저 업로드하여 이미지 URL을 받음
       let thumbnailUrl = "";
@@ -78,7 +81,10 @@ export default function Fab() {
         const form = new FormData();
         form.append("file", file);
         const { data: uploadRes } = await api.post("/uploads", form, {
-          headers: { "Content-Type": "multipart/form-data" },
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "Content-Type": "multipart/form-data",
+          },
         });
         // Swagger 예시 기준으로 이미지 경로는 data.imageUrl 필드에 옴
         thumbnailUrl = uploadRes?.data?.imageUrl ?? "";
@@ -93,17 +99,18 @@ export default function Fab() {
         published: true,
       } as const;
 
-      const { data } = await api.post("/lps", payload);
-      return data;
+      return await createLpApi(payload, token);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lps"] });
+      qc.invalidateQueries({ queryKey: ["myLps"] });
+      qc.invalidateQueries({ queryKey: ["likedLps"] });
       setOpen(false);
       resetForm();
     },
   });
 
-  const submitDisabled = createLp.isPending || !title.trim();
+  const submitDisabled = createLpMut.isPending || !title.trim();
 
   return (
     <>
@@ -243,9 +250,9 @@ export default function Fab() {
                 <button
                   disabled={submitDisabled}
                   className="w-full rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold hover:bg-pink-500 disabled:opacity-50"
-                  onClick={() => createLp.mutate()}
+                  onClick={() => createLpMut.mutate()}
                 >
-                  {createLp.isPending ? "생성 중…" : "Add LP"}
+                  {createLpMut.isPending ? "생성 중…" : "Add LP"}
                 </button>
               </div>
             </div>
