@@ -258,7 +258,7 @@ export default function LpList() {
       <ul className="flex flex-wrap gap-4">
         {allItems.map((lp) => (
           <li key={lp.id} className="w-[180px] overflow-hidden">
-            <Link to={`/lp/${lp.id}`} className="group block">
+            <Link to={`/lps/${lp.id}`} className="group block">
               <div className="relative w-[180px] h-[180px] overflow-hidden rounded bg-neutral-800 border-0 outline-none">
                 {lp.thumbnailUrl ? (
                   <img

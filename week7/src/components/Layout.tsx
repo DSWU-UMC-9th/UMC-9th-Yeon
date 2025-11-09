@@ -58,7 +58,7 @@ export default function Layout() {
         )}
 
         {/* 메인 */}
-        <main className="flex-1 p-4 md:p-6 bg-black h-screen">
+        <main className="overflow-scroll flex-1 p-4 md:p-6 bg-black h-screen">
           <Outlet />
         </main>
       </div>

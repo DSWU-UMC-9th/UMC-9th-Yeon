@@ -30,7 +30,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "lp/:lpid",
+        path: "lps/:lpid",
         element: (
           <ProtectedRoute>
             <LpDetail />
