@@ -1,5 +1,6 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+// import { useParams } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import api from "../api/client";
@@ -8,6 +9,7 @@ import ListSkeleton, { CommentsSkeleton } from "../components/ListSkeleton";
 import editIcon from "../assets/edit.svg";
 import trashIcon from "../assets/trash.svg";
 import likeIcon from "../assets/like.svg";
+import unlikeIcon from "../assets/unlike.svg";
 import moreIcon from "../assets/more.svg";
 
 /**
@@ -176,7 +178,6 @@ async function unlikeLp(lpId: string, token?: string | null) {
   return data;
 }
 
-// Image upload helper
 async function uploadImage(file: File, token?: string | null) {
   const form = new FormData();
   form.append("file", file);
@@ -191,6 +192,20 @@ async function uploadImage(file: File, token?: string | null) {
   const payload: any = data?.data ?? data;
   const url = payload?.imageUrl ?? payload?.url ?? payload?.location ?? payload?.fileUrl ?? payload?.path ?? "";
   return url as string;
+}
+
+// Me API (get my id/email reliably for like inference and owner checks)
+async function fetchMe(token?: string | null): Promise<{ id?: number; email?: string } | null> {
+  if (!token) return null;
+  try {
+    const { data } = await api.get(`/users/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const payload: any = data?.data ?? data;
+    return { id: payload?.id ?? payload?.userId, email: payload?.email ?? null } as any;
+  } catch {
+    return null;
+  }
 }
 
 // Normalize tag names from either ["a","b"] or [{name:"a"},...] shapes
@@ -231,23 +246,43 @@ export default function LpDetail() {
   const lpid = (params as any)?.lpid ?? (params as any)?.lpId ?? (params as any)?.LPId;
   const { token, user } = useAuth() as { token?: string | null; user?: { id?: number; email?: string } };
 
-  // derive my identity (id/email) from hook or JWT payload as fallback
-  const myIdentity = React.useMemo(() => {
-    let myId: number | null = typeof user?.id === "number" ? Number(user!.id) : null;
-    let myEmail: string | null = (user as any)?.email ?? null;
+  // get my identity from server (authoritative)
+  const { data: me } = useQuery({
+    queryKey: ["me", token],
+    queryFn: () => fetchMe(token),
+    enabled: Boolean(token),
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
+  // derive my identity (id/email) from server, hook, or JWT payload as fallback
+  const myIdentity = React.useMemo(() => {
+    // 1) Prefer server `/users/me`
+    let myId: number | null =
+      typeof (me as any)?.id === "number"
+        ? Number((me as any).id)
+        : typeof user?.id === "number"
+        ? Number(user!.id)
+        : null;
+    let myEmail: string | null = ((me as any)?.email as string) ?? (user as any)?.email ?? null;
+
+    // 2) Fallback to JWT payload
     if ((!myId || !myEmail) && token) {
       try {
         const payloadStr = atob(token.split(".")[1] || "");
         const payload = JSON.parse(payloadStr);
-        // common fields seen in tokens
-        const candId = payload?.userId ?? payload?.id ?? (typeof payload?.sub === "string" ? payload.sub : undefined);
+        const candId =
+          payload?.userId ??
+          payload?.id ??
+          payload?.user?.id ??
+          (typeof payload?.sub === "string" && /^\d+$/.test(payload.sub) ? Number(payload.sub) : undefined);
         const parsedId = Number(candId);
         if (!myId && Number.isFinite(parsedId)) myId = parsedId;
 
         if (!myEmail) {
           myEmail =
             payload?.email ??
+            payload?.user?.email ??
             (typeof payload?.sub === "string" && payload.sub.includes("@") ? payload.sub : null) ??
             null;
         }
@@ -256,7 +291,7 @@ export default function LpDetail() {
       }
     }
     return { myId, myEmail };
-  }, [token, user]);
+  }, [token, user, me]);
 
   const qc = useQueryClient();
   const [commentsOpen, setCommentsOpen] = React.useState(false);
@@ -280,6 +315,8 @@ export default function LpDetail() {
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
 
+  const navigate = useNavigate();
+
   const onPickFile = () => {
     fileInputRef.current?.click();
   };
@@ -302,12 +339,36 @@ export default function LpDetail() {
 
   const enabled = Boolean(token && lpid);
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ["lp", lpid],
+    queryKey: ["lp", lpid, token],
     queryFn: () => fetchLp(lpid!, token),
     enabled,
     retry: (failureCount, err) => {
       const status = (err as AxiosError)?.response?.status ?? 0;
       return status !== 401 && status !== 404 && failureCount < 2;
+    },
+    // Normalize isLiked and totalLikes using server truth, fallback to local inference if missing
+    select: (raw: any) => {
+      const lp = { ...(raw || {}) };
+      // Prefer server truth
+      const hasServerIsLiked = typeof lp.isLiked === "boolean";
+      const hasServerTotal = typeof lp.totalLikes === "number";
+
+      // Infer isLiked by myId only when server doesn't provide it
+      if (!hasServerIsLiked) {
+        if (Array.isArray(lp.likes)) {
+          const myIdNum = Number(myIdentity.myId);
+          if (Number.isFinite(myIdNum)) {
+            lp.isLiked = lp.likes.some((it: any) => Number(it?.userId) === myIdNum);
+          }
+        }
+        // default to false if still unknown
+        if (typeof lp.isLiked !== "boolean") lp.isLiked = false;
+      }
+
+      if (!hasServerTotal) {
+        lp.totalLikes = Array.isArray(lp.likes) ? lp.likes.length : 0;
+      }
+      return lp;
     },
     staleTime: 60_000,
     keepPreviousData: true,
@@ -373,7 +434,7 @@ export default function LpDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lp", lpid] });
       qc.invalidateQueries({ queryKey: ["lps"] });
-      window.location.href = "/";
+      navigate(-1);
     },
     onError: (err: AxiosError | any) => {
       const status = err?.response?.status;
@@ -385,52 +446,32 @@ export default function LpDetail() {
     },
   });
 
-  // Toggle like – ALWAYS try POST first. If server says already-liked (409/400/422), then DELETE to cancel.
+  // Toggle like – Trust server truth (no optimistic update). We refetch after success.
   const { mutate: toggleLike, isPending: isTogglingLike } = useMutation({
     mutationFn: async () => {
+      // If current data says liked, try to unlike. Else, try to like.
+      // We still keep a defensive fallback for mismatched states.
       try {
-        // 1) 좋아요 먼저 시도
-        return await likeLp(lpid!, token);
+        if (data?.isLiked) {
+          return await unlikeLp(lpid!, token);
+        } else {
+          return await likeLp(lpid!, token);
+        }
       } catch (err: any) {
         const status = err?.response?.status;
-        // 2) 이미 좋아요 상태라면(중복/제약) → 취소 시도
-        if (status === 409 || status === 400 || status === 422) {
-          try {
-            return await unlikeLp(lpid!, token);
-          } catch (e2: any) {
-            // 취소 대상이 없으면(404) 그냥 노옵
-            if (e2?.response?.status === 404) return {};
-            throw e2;
-          }
+        // If like already exists (409/400/422), flip to unlike.
+        if (!data?.isLiked && (status === 409 || status === 400 || status === 422)) {
+          return await unlikeLp(lpid!, token);
         }
-        // 그 외는 그대로 에러 전파
+        // If like does not exist yet (404), flip to like.
+        if (data?.isLiked && status === 404) {
+          return await likeLp(lpid!, token);
+        }
         throw err;
       }
     },
-    onMutate: async () => {
-      const key = ["lp", lpid];
-      await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData(key);
-      qc.setQueryData(key, (old: any) => {
-        if (!old) return old;
-        const next: any = { ...old };
-        const wasLiked = Boolean(old.isLiked);
-        const willBeLiked = !wasLiked;
-        next.isLiked = willBeLiked;
-        if (typeof old.totalLikes === "number") {
-          next.totalLikes = Math.max(0, (old.totalLikes || 0) + (willBeLiked ? 1 : -1));
-        } else if (Array.isArray(old.likes)) {
-          const newLen = Math.max(0, old.likes.length + (willBeLiked ? 1 : -1));
-          next.likes = new Array(newLen).fill(0);
-        }
-        return next;
-      });
-      return { previous };
-    },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(["lp", lpid], ctx.previous);
-    },
-    onSettled: () => {
+    onSuccess: () => {
+      // Refetch the LP detail so that isLiked and totalLikes come from the server.
       qc.invalidateQueries({ queryKey: ["lp", lpid] });
     },
   });
@@ -531,7 +572,11 @@ export default function LpDetail() {
 
   const contentText = (data as any)?.content ?? data?.body ?? data?.description ?? "";
   const likeCount =
-    typeof data?.totalLikes === "number" ? data.totalLikes : Array.isArray(data?.likes) ? data!.likes!.length : 0;
+    typeof data?.totalLikes === "number"
+      ? Number(data.totalLikes)
+      : Array.isArray(data?.likes)
+      ? Number(data!.likes!.length)
+      : 0;
 
   const authorName = data?.author?.name ?? "작성자";
   const authorImage = data?.author?.profileImageUrl ?? null;
@@ -795,7 +840,7 @@ export default function LpDetail() {
           onClick={() => toggleLike()}
           disabled={isTogglingLike}
         >
-          <img src={likeIcon} alt="좋아요" className="h-5 w-5" />
+          <img src={data?.isLiked ? likeIcon : unlikeIcon} alt="좋아요" className="h-5 w-5" />
           <span className="font-medium">{likeCount}</span>
         </button>
         <button
