@@ -1,10 +1,12 @@
-/// <reference types="react" />
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import api from "../api/client";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useThrottle } from "../hooks/useThrottle";
+import { useDebounce } from "../hooks/useDebounce";
 import type { AxiosError } from "axios";
 
 type Lp = {
@@ -61,8 +63,9 @@ async function fetchLpPage({
     console.log("[LP][/lps] status:", res?.status);
     try {
       console.log("[LP][/lps] headers:", res?.headers);
-    } catch {}
-    console.log("[LP][/lps] raw:", res?.data);
+    } finally{
+      console.log("[LP][/lps] raw:", res?.data);
+    }
 
     // ---- Shape detection helpers ----
     const root: any = res?.data ?? {};
@@ -72,7 +75,9 @@ async function fetchLpPage({
     try {
       console.log("[LP][/lps] keys(root):", Object.keys(root || {}));
       console.log("[LP][/lps] keys(root.data):", Object.keys(root?.data || {}));
-    } catch {}
+    } finally{
+      console.log("[LP][/lps] keys(box):", Object.keys(box || {}));
+    }
 
     // Try common locations for an array payload
     const candidates: any[] = [];
@@ -142,17 +147,18 @@ export default function LpList() {
   // 최신순/오래된순 - 서버의 asc|desc와 매핑
   const [order, setOrder] = useState<"asc" | "desc">("desc"); // desc=최신순
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const { token } = useAuth();
 
   const { data, isLoading, isError, error, hasNextPage, isFetching, isFetchingNextPage, fetchNextPage, refetch } =
     useInfiniteQuery({
-      queryKey: ["lps", token, search, order],
+      queryKey: ["lps", token, debouncedSearch, order],
       queryFn: ({ pageParam }) =>
         fetchLpPage({
           token,
           cursor: pageParam ?? null,
           limit: 20,
-          search,
+          search: debouncedSearch,
           order,
         }),
       initialPageParam: null as number | null,
@@ -164,34 +170,33 @@ export default function LpList() {
       },
       staleTime: 60_000,
       gcTime: 10 * 60_000,
-      onSuccess: (data) => {
-        try {
-          console.log(
-            "[LP][query] onSuccess pages:",
-            data.pages.length,
-            "first items:",
-            data.pages?.[0]?.items?.length ?? 0
-          );
-        } catch {}
-      },
     });
 
   // 무한 스크롤 옵저버
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const throttledFetchNextPage = useThrottle(
+    () => {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    3000
+  );
+
   useEffect(() => {
     if (!sentinelRef.current) return;
     const el = sentinelRef.current;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+        if (entries[0].isIntersecting) {
+          throttledFetchNextPage();
         }
       },
       { rootMargin: "200px 0px" }
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [throttledFetchNextPage]);
 
   if (!token) {
     return (
@@ -222,20 +227,36 @@ export default function LpList() {
 
   return (
     <section className="min-h-0 h-full overflow-y-auto overscroll-contain pr-1">
+      {/* 검색 영역 */}
+      <div className="mb-6">
+        <div className="flex items-center gap-3 border-b border-neutral-700 pb-2">
+          <div className="flex flex-1 items-center gap-2">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="검색"
+              className="flex-1 bg-transparent outline-none text-sm text-neutral-100 placeholder:text-neutral-500"
+            />
+          </div>
+          <button className="px-3 py-1 rounded-full border border-neutral-600 text-xs text-neutral-200 hover:bg-neutral-800">
+            제목 ▾
+          </button>
+        </div>
+        <div className="mt-3 flex items-center text-xs">
+          <span className="text-neutral-300">최근 검색어</span>
+          <button className="ml-3 text-[11px] text-neutral-500 hover:underline">모두 지우기</button>
+        </div>
+      </div>
+
+      {/* 정렬 / 새로고침 영역 */}
       <div className="mb-4 flex items-center gap-2">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="검색어 입력"
-          className="px-3 py-1 rounded bg-neutral-800 border border-neutral-700 w-[220px]"
-        />
         <button
           onClick={() => setOrder((o) => (o === "desc" ? "asc" : "desc"))}
-          className="px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700"
+          className="px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-xs"
         >
           정렬: {order === "desc" ? "최신순" : "오래된순"} {isFetching && "…"}
         </button>
-        <button onClick={() => refetch()} className="px-3 py-1 rounded border border-neutral-700">
+        <button onClick={() => refetch()} className="px-3 py-1 rounded border border-neutral-700 text-xs">
           새로고침
         </button>
       </div>

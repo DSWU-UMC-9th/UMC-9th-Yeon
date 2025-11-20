@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import client from "../../api/client";
 
-export default function Sidebar({ onClose }: { onClose?: () => void }) {
+export default function Sidebar({ onClose, isOpen = true }: { onClose?: () => void; isOpen?: boolean }) {
   const navigate = useNavigate();
 
   const queryClient = useQueryClient();
@@ -95,24 +95,41 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   };
 
   const li = "block px-3 py-2 rounded hover:bg-neutral-800";
+
   return (
-    <nav className="p-3 space-y-1">
-      <NavLink to="/" className={li} onClick={onClose}>
-        찾기
-      </NavLink>
-      <NavLink to="/my" className={li} onClick={onClose}>
-        마이페이지
-      </NavLink>
-      <button
-        type="button"
-        className={`${li} ${deleteAccount.isPending ? "opacity-60 cursor-not-allowed" : ""}`}
-        onClick={handleDelete}
-        disabled={deleteAccount.isPending}
-        aria-label="탈퇴하기"
-        title="탈퇴하기"
+    <div
+      className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
+        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+      }`}
+      aria-hidden={!isOpen}
+      onClick={onClose}
+    >
+      <aside
+        className={`fixed top-15 left-0 h-full w-64 bg-neutral-950 shadow-2xl p-4 transform transition-transform duration-300 ease-in-out z-50 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        role="dialog"
+        onClick={(e) => e.stopPropagation()}
       >
-        탈퇴하기
-      </button>
-    </nav>
+        <nav className="space-y-1">
+          <NavLink to="/" className={li} onClick={onClose}>
+            찾기
+          </NavLink>
+          <NavLink to="/my" className={li} onClick={onClose}>
+            마이페이지
+          </NavLink>
+          <button
+            type="button"
+            className={`${li} ${deleteAccount.isPending ? "opacity-60 cursor-not-allowed" : ""}`}
+            onClick={handleDelete}
+            disabled={deleteAccount.isPending}
+            aria-label="탈퇴하기"
+            title="탈퇴하기"
+          >
+            탈퇴하기
+          </button>
+        </nav>
+      </aside>
+    </div>
   );
 }

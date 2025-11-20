@@ -8,7 +8,7 @@ export default function Header({ onOpenSidebar }: { onOpenSidebar: () => void })
 
   return (
     <header className="sticky top-0 z-100 flex items-center justify-between px-4 md:px-6 h-14 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur">
-      <button className="md:hidden p-2" aria-label="open" onClick={onOpenSidebar}>
+      <button className="p-2" aria-label="open" onClick={onOpenSidebar}>
         <Menu />
       </button>
 
